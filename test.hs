@@ -9,8 +9,9 @@ data Move = Move {
     id :: String,
     mark :: Char
 } deriving Show
-
-type Moves = [Move]
+instance Eq Move where
+    (Move x1 y1 id1 mark1) == (Move x2 y2 id2 mark2) =
+        (x1 == x2) && (y1 == y2)
 
 message :: String
 --message = "d1:cd1:0i0e1:1i2ee2:id3:vWk4:prevd1:cd1:0i1e1:1i1ee2:id3:vWk1:v1:oe1:v1:xe"
@@ -28,6 +29,7 @@ message = "d1:cd1:0i0e1:1i0ee2:id27:PhrgptTJSaeGHSkfOtPottPNrye4:prevd1:cd1:0i2e
 --ID gali but tuscias string!
 
 go :: String -> [Move]
+go "de" = []
 go str = parseMoves [] str
 
 parseMoves :: [Move] -> String -> [Move]
@@ -86,3 +88,7 @@ getMark ('e':'x':':':'1':'v':':':'1':rest) = ('X', reverse rest)
 getMark ('e':'X':':':'1':'v':':':'1':rest) = ('X', reverse rest)
 getMark ('e':'o':':':'1':'v':':':'1':rest) = ('O', reverse rest)
 getMark ('e':'O':':':'1':'v':':':'1':rest) = ('O', reverse rest)
+
+movesAreUnique :: [Move] -> Bool
+movesAreUnique [] = True
+movesAreUnique (m:moves) = m `notElem` moves && movesAreUnique moves
