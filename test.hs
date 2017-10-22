@@ -1,7 +1,6 @@
 import Data.List
 import Data.Char
 import Debug.Trace
-import Text.Read
 
 data Move = Move {
     x :: Int,
@@ -9,28 +8,22 @@ data Move = Move {
     pId :: String,
     mark :: Char
 } deriving Show
+
+message = "d1:cd1:0i0e1:1i0ee2:id27"
+
 instance Eq Move where
     (Move x1 y1 id1 mark1) == (Move x2 y2 id2 mark2) =
         (x1 == x2) && (y1 == y2)
 
-message :: String
---message = "d1:cd1:0i0e1:1i2ee2:id3:vWk4:prevd1:cd1:0i1e1:1i1ee2:id3:vWk1:v1:oe1:v1:xe"
-message = "d1:cd1:0i0e1:1i0ee2:id27:PhrgptTJSaeGHSkfOtPottPNrye4:prevd1:cd1:0i2e1:1i2ee2:id13:WkAKUAmstcBHD4:prevd1:cd1:0i0e1:1i1ee2:id27:PhrgptTJSaeGHSkfOtPottPNrye4:prevd1:cd1:0i1e1:1i1ee2:id13:WkAKUAmstcBHD4:prevd1:cd1:0i1e1:1i0ee2:id27:PhrgptTJSaeGHSkfOtPottPNrye4:prevd1:cd1:0i2e1:1i2ee2:id13:WkAKUAmstcBHD1:v1:oe1:v1:xe1:v1:oe1:v1:xe1:v1:oe1:v1:xe"
---(0, 2) = X by "vWk"
---(1, 1) = O by "vWk"
-
--- message = "d1:cd1:0i2e1:1i1ee2:id4:pAtK1:v1:xe"
--- (2, 1) = X by "pAtK"
-
---winner :: String -> Either String (Maybe String)
---winner str = Left (Just str)
---winner ('e':str) = Right (Just str)
-
---ID gali but tuscias string!
-
-go :: String -> [Move]
-go "de" = []
-go str = parseMoves [] str
+w :: String -> String
+w "de" = "The board is empty"
+w str = 
+    let 
+        moves = parseMoves [] str
+    in 
+        if (areMovesUnique moves) 
+        then getWinner moves
+        else "There are overlapping moves"        
 
 parseMoves :: [Move] -> String -> [Move]
 parseMoves moves [] = moves
@@ -48,7 +41,9 @@ parseMove ('d':rest) =
         (mark, nextMoveString) = readMark restId
     in 
         (Move x y id mark, nextMoveString)
+parseMove _ = error "Wrong start of move message"
 
+-- VALIDATE COORDS INPUT
 readCoords :: String -> (Int, Int, String)
 readCoords ('1':':':'c':'d':'1':':':'0':'i':'0':'e':'1':':':'1':'i':'0':'e':'e':rest) = (0,0, rest)
 readCoords ('1':':':'c':'d':'1':':':'0':'i':'0':'e':'1':':':'1':'i':'1':'e':'e':rest) = (0,1, rest)
@@ -61,16 +56,19 @@ readCoords ('1':':':'c':'d':'1':':':'0':'i':'2':'e':'1':':':'1':'i':'1':'e':'e':
 readCoords ('1':':':'c':'d':'1':':':'0':'i':'2':'e':'1':':':'1':'i':'2':'e':'e':rest) = (2,2, rest)
 readCoords _ = error "Wrong X and Y format"
 
---TODO: Read f-ion validation missing!
+--TODO: read should be rewritten to readMaybe
 readId :: String -> (String, String)
 readId ('2':':':'i':'d':rest) = 
     let
         (idLengthStr, restIdLength) = getIdLengthAsString [] rest
-        idLength = read idLengthStr
+        idLength = parseNumber 0 1 idLengthStr
     in 
         getId [] idLength restIdLength
+readId _ = error "Wrong id format"
 
+--Catch empty string after colon
 getIdLengthAsString :: String -> String -> (String, String)
+getIdLengthAsString str [] = error "String is empty after ID length"
 getIdLengthAsString str (':':rest) = (str, rest)
 getIdLengthAsString str rest = getIdLengthAsString (str ++ [head rest]) (tail rest)
 
@@ -79,22 +77,22 @@ getId id 0 rest = (id, rest)
 getId id length rest = getId (id ++ [head rest]) (length-1) (tail rest)
 
 --TODO: something smarter for second part of the f-ion?
+--catch wrong format
 readMark :: String -> (Char, String)
 readMark ('4':':':'p':'r':'e':'v':rest) = getMark (reverse rest)
 readMark ('1':rest) = getMark (reverse ('1':rest))
+readMark _ = error "Wrong format after ID"
 
 getMark :: String -> (Char, String)
 getMark ('e':'x':':':'1':'v':':':'1':rest) = ('X', reverse rest)
 getMark ('e':'X':':':'1':'v':':':'1':rest) = ('X', reverse rest)
 getMark ('e':'o':':':'1':'v':':':'1':rest) = ('O', reverse rest)
 getMark ('e':'O':':':'1':'v':':':'1':rest) = ('O', reverse rest)
+getMark _ = error "Wrong mark format"
 
 areMovesUnique :: [Move] -> Bool
 areMovesUnique [] = True
 areMovesUnique (m:moves) = m `notElem` moves && areMovesUnique moves
-
-getPlayersMoves :: Char -> [Move] -> ([Move], [Move])
-getPlayersMoves char moves = partition (\move -> mark move == char) moves
 
 getWinner :: [Move] -> String
 getWinner moves = 
@@ -107,6 +105,9 @@ getWinner moves =
         else if oWon then pId (head oMoves)
         else "Nobody won"
         -- (xWonColumns, xWonRows, xWonDiagonal, oWonColumns, oWonRows, oWonDiagonal)
+
+getPlayersMoves :: Char -> [Move] -> ([Move], [Move])
+getPlayersMoves char moves = partition (\move -> mark move == char) moves
 
 findThreeInColumns :: Int -> [Move] -> Bool
 findThreeInColumns 3  _ = False
@@ -127,7 +128,22 @@ findThreeDiagonally moves =
         fm Nothing = False
         fm _ = True
     in
-        (fm center && fm botLeft && fm topRight) || (fm center && fm topLeft && fm botRight) 
+        (fm center && fm botLeft && fm topRight) || (fm center && fm topLeft && fm botRight)
 
-s :: String -> String
-s str = getWinner $ go str
+parseNumber :: Int -> Int -> String -> Int
+parseNumber 0 1 [] = error "Id length is missing"
+parseNumber num i [] = num
+parseNumber num i rest =
+    let
+        digit = last rest
+    in
+        case digit of '1' -> parseNumber (num + 1 * i) (i*10) (init rest)
+                      '2' -> parseNumber (num + 2 * i) (i*10) (init rest)
+                      '3' -> parseNumber (num + 3 * i) (i*10) (init rest)
+                      '4' -> parseNumber (num + 4 * i) (i*10) (init rest)
+                      '5' -> parseNumber (num + 5 * i) (i*10) (init rest)
+                      '6' -> parseNumber (num + 6 * i) (i*10) (init rest)
+                      '7' -> parseNumber (num + 7 * i) (i*10) (init rest)
+                      '8' -> parseNumber (num + 8 * i) (i*10) (init rest)
+                      '9' -> parseNumber (num + 9 * i) (i*10) (init rest)
+                      _ -> error "Id length is not a number"
