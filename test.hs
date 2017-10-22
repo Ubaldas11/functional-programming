@@ -6,7 +6,7 @@ import Text.Read
 data Move = Move {
     x :: Int,
     y :: Int,
-    id :: String,
+    pId :: String,
     mark :: Char
 } deriving Show
 instance Eq Move where
@@ -89,6 +89,45 @@ getMark ('e':'X':':':'1':'v':':':'1':rest) = ('X', reverse rest)
 getMark ('e':'o':':':'1':'v':':':'1':rest) = ('O', reverse rest)
 getMark ('e':'O':':':'1':'v':':':'1':rest) = ('O', reverse rest)
 
-movesAreUnique :: [Move] -> Bool
-movesAreUnique [] = True
-movesAreUnique (m:moves) = m `notElem` moves && movesAreUnique moves
+areMovesUnique :: [Move] -> Bool
+areMovesUnique [] = True
+areMovesUnique (m:moves) = m `notElem` moves && areMovesUnique moves
+
+getPlayersMoves :: Char -> [Move] -> ([Move], [Move])
+getPlayersMoves char moves = partition (\move -> mark move == char) moves
+
+getWinner :: [Move] -> String
+getWinner moves = 
+    let 
+        (xMoves, oMoves) = getPlayersMoves 'X' moves
+        xWon = (findThreeInColumns 0 xMoves) || (findThreeInRows 0 xMoves) || (findThreeDiagonally xMoves)
+        oWon = (findThreeInColumns 0 oMoves) || (findThreeInRows 0 oMoves) || (findThreeDiagonally oMoves)
+    in
+        if xWon then pId (head xMoves)
+        else if oWon then pId (head oMoves)
+        else "Nobody won"
+        -- (xWonColumns, xWonRows, xWonDiagonal, oWonColumns, oWonRows, oWonDiagonal)
+
+findThreeInColumns :: Int -> [Move] -> Bool
+findThreeInColumns 3  _ = False
+findThreeInColumns counter moves = (length (filter (\move -> x move == counter) moves) == 3) || findThreeInColumns (counter+1) moves
+
+findThreeInRows :: Int -> [Move] -> Bool
+findThreeInRows 3  _ = False
+findThreeInRows counter moves = (length (filter (\move -> y move == counter) moves) == 3) || findThreeInRows (counter+1) moves
+
+findThreeDiagonally :: [Move] -> Bool
+findThreeDiagonally moves = 
+    let
+        center = find (\move -> x move == 1 && y move == 1) moves
+        topLeft = find (\move -> x move == 0 && y move == 0) moves
+        topRight = find (\move -> x move == 2 && y move == 0) moves
+        botLeft = find (\move -> x move == 0 && y move == 2) moves
+        botRight = find (\move -> x move == 2 && y move == 2) moves
+        fm Nothing = False
+        fm _ = True
+    in
+        (fm center && fm botLeft && fm topRight) || (fm center && fm topLeft && fm botRight) 
+
+s :: String -> String
+s str = getWinner $ go str
