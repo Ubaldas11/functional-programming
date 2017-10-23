@@ -6,9 +6,10 @@ import Debug.Trace
 import Parser
 import MoveDataType
 
-message = "d1:cd1:0i1e1:1i0ee2:id14:TwqkxOFfdfdfdmwqdSCK4:prevd1:cd1:0i2e1:1i0ee2:id2:IY4:prevd1:cd1:0i2e1:1i1ee2:id14:TwqkxOFmwqdSCK4:prevd1:cd1:0i1e1:1i2ee2:id2:IY4:prevd1:cd1:0i2e1:1i2ee2:id14:TwqkxOFmwqdSCK1:v1:oe1:v1:oe1:v1:xe1:v1:oe1:v1:xe"
+message = "d1:cd1:0i2e1:1i2ee2:id10:GfYDhPxwal4:prevd1:cd1:0i1e1:1i2ee2:id28:hPHnfXjKxVnUlXPuVvnUtRrHzkpx4:prevd1:cd1:0i2e1:1i1ee2:id10:GfYDhPxwal4:prevd1:cd1:0i0e1:1i1ee2:id28:hPHnfXjKxVnUlXPuVvnUtRrHzkpx4:prevd1:cd1:0i2e1:1i0ee2:id10:GfYDhPxwal1:v1:xe1:v1:oe1:v1:xe1:v1:oe1:v1:xe"
 
 winner :: String -> Either String (Maybe String)
+winner "" = Left "Empty string given instead of bencode"
 winner "de" = Right Nothing
 winner str = 
     let 
@@ -17,9 +18,23 @@ winner str =
         case moves of 
                 Left msg -> Left msg
                 Right moves ->
-                                if (areMovesUnique moves) 
-                                then Right (getWinner moves)
-                                else Left "ERROR: There are overlapping moves"   
+                    let 
+                        movesUnique = areMovesUnique moves
+                        correctOrder = correctMoveOrder (mark (head moves)) moves
+                    in
+                        case (movesUnique, correctOrder) of
+                            (_, False) -> Left "ERROR: Two X or O placed in a row"
+                            (False, _) -> Left "ERROR: There are overlapping moves"
+                            (_, _) -> Right (getWinner moves) 
+
+correctMoveOrder :: Char -> [Move] -> Bool
+correctMoveOrder char [] = True
+correctMoveOrder char (m:moves) = 
+    let
+        nextChar = if char == 'X' then 'O' else 'X'
+        currMatch = mark m == char
+    in
+        currMatch && (correctMoveOrder nextChar moves)
 
 areMovesUnique :: [Move] -> Bool
 areMovesUnique [] = True
@@ -28,7 +43,7 @@ areMovesUnique (m:moves) = m `notElem` moves && areMovesUnique moves
 getWinner :: [Move] -> Maybe String
 getWinner moves = 
     let 
-        (xMoves, oMoves) = distributeMoves 'X' moves
+        (xMoves, oMoves) = distributeMovesByMark 'X' moves
         xHasThree = (findThreeInColumns 0 xMoves) || (findThreeInRows 0 xMoves) || (findThreeDiagonally xMoves)
         oHasThree = (findThreeInColumns 0 oMoves) || (findThreeInRows 0 oMoves) || (findThreeDiagonally oMoves)
     in
@@ -37,8 +52,8 @@ getWinner moves =
             (_, True) -> Just (pId (head xMoves))
             (_, _) -> Nothing
 
-distributeMoves :: Char -> [Move] -> ([Move], [Move])
-distributeMoves char moves = partition (\move -> mark move == char) moves
+distributeMovesByMark :: Char -> [Move] -> ([Move], [Move])
+distributeMovesByMark char moves = partition (\move -> mark move == char) moves
 
 findThreeInColumns :: Int -> [Move] -> Bool
 findThreeInColumns 3  _ = False

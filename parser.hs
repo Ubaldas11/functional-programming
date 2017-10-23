@@ -46,23 +46,24 @@ readId ('2':':':'i':'d':rest) =
         case idLength of
             -1 -> ("ERROR: ID length is not a number", "ERROR: ID length is not a number")
             _ -> getId [] idLength restIdLength
-readId _ = ("ERROR: wrong ID format", "ERROR: wrong id format")
+readId _ = ("ERROR: wrong ID format", "ERROR: wrong ID format")
 
 getIdLengthAsString :: String -> String -> (String, String)
 getIdLengthAsString str [] =("ERROR: String is empty after ID length", "ERROR: String is empty after ID length")
 getIdLengthAsString str (':':rest) = (str, rest)
 getIdLengthAsString str rest = getIdLengthAsString (str ++ [head rest]) (tail rest)
 
+--catching previous errors is risky as ID might be called like the error message
 getId :: String -> Int -> String -> (String, String)
 getId _ _ [] = ("ERROR: ID is empty", "ERROR: ID is empty")
 getId id 0 rest = (id, rest)
 getId id length rest = getId (id ++ [head rest]) (length-1) (tail rest)
 
---TODO: something smarter for second part of the f-ion?
 readMark :: String -> Either String (Char, String)
 readMark ('4':':':'p':'r':'e':'v':rest) = getMark (reverse rest)
 readMark ('1':rest) = getMark (reverse ('1':rest))
-readMark msg = Left msg
+readMark ('E':'R':'R':rest) = Left ('E':'R':'R':rest)
+readMark msg = (Left "ERROR: Wrong format after ID")
 
 getMark :: String -> Either String (Char, String)
 getMark ('e':'x':':':'1':'v':':':'1':rest) = Right ('X', reverse rest)
