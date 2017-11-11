@@ -2,14 +2,14 @@ module Winner where
 
 import Data.List
 import Data.Char
-import Debug.Trace
+
 import Parser
 import MoveDataType
 
-message = "d1:cd1:0i2e1:1i2ee2:id10:GfYDhPxwal4:prevd1:cd1:0i1e1:1i2ee2:id28:hPHnfXjKxVnUlXPuVvnUtRrHzkpx4:prevd1:cd1:0i2e1:1i1ee2:id10:GfYDhPxwal4:prevd1:cd1:0i0e1:1i1ee2:id28:hPHnfXjKxVnUlXPuVvnUtRrHzkpx4:prevd1:cd1:0i2e1:1i0ee2:id10:GfYDhPxwal1:v1:xe1:v1:oe1:v1:xe1:v1:oe1:v1:xe"
+message = "d 1:c d 1:0i2e 1:1i2e e2:id10:GfYDhPxwal4:prevd1:cd1:0i1e1:1i2ee2:id28:hPHnfXjKxVnUlXPuVvnUtRrHzkpx4:prevd1:cd1:0i2e1:1i1ee2:id10:GfYDhPxwal4:prevd1:cd1:0i0e1:1i1ee2:id28:hPHnfXjKxVnUlXPuVvnUtRrHzkpx4:prevd1:cd1:0i2e1:1i0ee2:id10:GfYDhPxwal1:v1:xe1:v1:oe1:v1:xe1:v1:oe1:v1:xe"
 
 winner :: String -> Either String (Maybe String)
-winner "" = Left "Empty string given instead of bencode"
+winner "" = Left "ERROR: bencode string cannot be empty"
 winner "de" = Right Nothing
 winner str = 
     let 
