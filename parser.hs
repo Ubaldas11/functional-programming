@@ -3,6 +3,7 @@ module Parser where
 import MoveDataType
     
 parseMoves :: [Move] -> String -> Either String [Move]
+parseMoves moves "de" = Right []
 parseMoves moves [] = Right moves
 parseMoves moves rest = 
     let 
@@ -108,14 +109,6 @@ convertMoves moves str =
         in
             convertMoves (tail moves) (coordsStr ++ idStr ++ prevStr ++ str ++ markStr) 
 
-
-t :: String -> String
-t str =
-    let 
-        moves = fromRight $ parseMoves [] str
-    in
-        getMessage moves
-
-fromRight :: Either a b -> b
-fromRight (Left _)  = error "Either.Unwrap.fromRight: Argument takes form 'Left _'" -- yuck
-fromRight (Right x) = x
+-- fromRight :: Either a b -> b
+-- fromRight (Left _)  = error "Either.Unwrap.fromRight: Argument takes form 'Left _'" -- yuck
+-- fromRight (Right x) = x
