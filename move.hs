@@ -85,6 +85,32 @@ board = [Move 0 0 "E" 'E', Move 1 0 "E" 'E', Move 2 0 "E" 'E',
          Move 0 1 "E" 'E', Move 1 1 "E" 'E', Move 2 1 "E" 'E',
          Move 0 2 "E" 'E', Move 1 2 "E" 'E', Move 2 2 "E" 'E']
 
+-------------------------- Minimax part--------------------------
+
+minimax :: [Move] -> Int
+minimax allMoves =
+    let
+        possibleMoves = board \\ allMoves
+        score = 10
+    in
+        10
+
+
+
+isGameOver :: [Move] -> Bool
+isGameOver moves = if (length moves == 9 || getWinningMark moves /= Nothing) then True else False
+
+score :: [Move] -> Char -> Int
+score moves mark =
+    let
+        winningMark = winnerByMark moves mark
+    in
+        case winningMark of
+            Nothing -> 0
+            Just mark -> 10
+            _ -> -10
+
+--test AI (the IF part)
 t :: String -> Either String (Int, Int, Char)
 t str = 
     let
@@ -92,4 +118,14 @@ t str =
     in
         case moves' of
             Right moves -> move moves
+            Left msg -> Left msg
+
+--test winnerByMark function
+t1 :: Char -> String -> Either String (Maybe Bool)
+t1 mark str =
+    let
+        moves' = parseMoves [] str
+    in
+        case moves' of
+            Right moves -> Right (winnerByMark moves mark)
             Left msg -> Left msg

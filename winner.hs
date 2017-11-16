@@ -25,7 +25,17 @@ winner str =
                         case (movesUnique, correctOrder) of
                             (_, False) -> Left "ERROR: Two X or O placed in a row"
                             (False, _) -> Left "ERROR: There are overlapping moves"
-                            (_, _) -> Right (getWinner moves) 
+                            (_, _) -> Right (getWinner moves)
+
+winnerByMark :: [Move] -> Char -> Maybe Bool
+winnerByMark moves mark =
+    let
+        winningMark = getWinningMark moves
+    in
+        case winningMark of
+            Nothing -> Nothing
+            Just value -> if value == mark then (Just True) else (Just False)
+
 
 correctMoveOrder :: Char -> [Move] -> Bool
 correctMoveOrder char [] = True
@@ -39,6 +49,18 @@ correctMoveOrder char (m:moves) =
 areMovesUnique :: [Move] -> Bool
 areMovesUnique [] = True
 areMovesUnique (m:moves) = m `notElem` moves && areMovesUnique moves
+
+getWinningMark :: [Move] -> Maybe Char
+getWinningMark moves = 
+    let 
+        (xMoves, oMoves) = distributeMovesByMark 'X' moves
+        xHasThree = (findThreeInColumns 0 xMoves) || (findThreeInRows 0 xMoves) || (findThreeDiagonally xMoves)
+        oHasThree = (findThreeInColumns 0 oMoves) || (findThreeInRows 0 oMoves) || (findThreeDiagonally oMoves)
+    in
+        case (xHasThree, oHasThree) of
+            (True, _) -> Just (mark (head oMoves))
+            (_, True) -> Just (mark (head xMoves))
+            (_, _) -> Nothing
 
 getWinner :: [Move] -> Maybe String
 getWinner moves = 
