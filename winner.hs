@@ -27,16 +27,6 @@ winner str =
                             (False, _) -> Left "ERROR: There are overlapping moves"
                             (_, _) -> Right (getWinner moves)
 
-winnerByMark :: [Move] -> Char -> Maybe Bool
-winnerByMark moves mark =
-    let
-        winningMark = getWinningMark moves
-    in
-        case winningMark of
-            Nothing -> Nothing
-            Just value -> if value == mark then (Just True) else (Just False)
-
-
 correctMoveOrder :: Char -> [Move] -> Bool
 correctMoveOrder char [] = True
 correctMoveOrder char (m:moves) = 

@@ -3,129 +3,112 @@ import MoveDataType
 import Winner
 import Control.Monad
 import Data.List
+import Data.Maybe
+import Data.Ord as Ord
 
 import Debug.Trace
 import Data.Either
 
 --visad gaus validzios lentos ejimus (ne pilna, nesidubliuojancia, t.t.) ir grazins ejima
-move :: [Move] -> Either String (Int, Int, Char)
-move moves = do
-  mark <- myMark moves
-  isFirst <- evenMoveNumber moves
-  return $ case isFirst of
-    True -> attack moves mark
-    False -> defend moves mark
 
-myMark :: [Move] -> Either String Char
-myMark [] = Right 'X'
-myMark moves = if mark (last moves) == 'X' then Right 'O' else Right 'X'
+getMyMark :: [Move] -> Either String Char
+getMyMark [] = Right 'X'
+getMyMark moves = if mark (last moves) == 'X' then Right 'O' else Right 'X'
 
 evenMoveNumber :: [Move] -> Either String Bool
 evenMoveNumber moves = Right ((length moves) `mod` 2 == 0)
-
-attack :: [Move] -> Char -> (Int, Int, Char)
-attack [] mark = (1, 1, mark)
-attack moves mark = (mirrorCoord (x (last moves)), mirrorCoord (y (last moves)), mark)
-
-mirrorCoord :: Int -> Int
-mirrorCoord 0 = 2
-mirrorCoord 1 = 1
-mirrorCoord 2 = 0
-
-defend :: [Move] -> Char -> (Int, Int, Char)
-defend allMoves myMark = 
-    let
-        (myMoves, oppMoves) = distributeMovesByMark myMark allMoves
-        emptyMoves = board \\ allMoves
-        moveInSameLane = findMoveInSameLane myMoves oppMoves emptyMoves
-    in
-        case moveInSameLane of
-            Nothing -> (5, 5, myMark)
-            Just value -> (fst value, snd value, myMark)
-
-
-findMoveInSameLane :: [Move] -> [Move] -> [Move] -> Maybe (Int, Int)
--- neradom savo ejimo, kuris savam lane turetu priesininko ejima
-findMoveInSameLane [] oppMoves emptyMoves = Nothing
-findMoveInSameLane myMoves oppMoves emptyMoves = 
-    let 
-        myMove = head myMoves
-        oppMoveInAxisX = find (\mo -> x mo == x myMove) oppMoves
-        oppMoveInAxisY = find (\mo -> y mo == y myMove) oppMoves
-        nextTry = findMoveInSameLane (tail myMoves) oppMoves emptyMoves
-    in
-        case (oppMoveInAxisX, oppMoveInAxisY) of
-            (Nothing, Nothing) -> nextTry
-            (oppMoveX, oppMoveY) -> 
-                let
-                    foundEmptySpot = findEmptySpot myMove oppMoveX oppMoveY emptyMoves
-                in
-                    case foundEmptySpot of
-                        Nothing -> nextTry
-                        Just value -> foundEmptySpot
-
-findEmptySpot :: Move -> Maybe Move -> Maybe Move -> [Move] -> Maybe (Int, Int)
-findEmptySpot myMove Nothing Nothing emptyMoves = Nothing
-findEmptySpot myMove (Just oppMoveX) oppMoveY emptyMoves =
-    let
-        emptyMove = find(\m -> x m == x oppMoveX) emptyMoves
-    in 
-        case emptyMove of
-            Nothing -> findEmptySpot myMove Nothing oppMoveY emptyMoves
-            Just value -> Just (x value, y value)
-findEmptySpot myMove Nothing (Just oppMoveY) emptyMoves = 
-    let
-        emptyMove = find(\m -> y m == y oppMoveY) emptyMoves
-    in
-        case emptyMove of
-            Nothing -> Nothing
-            Just value -> Just (x value, y value)
 
 board = [Move 0 0 "E" 'E', Move 1 0 "E" 'E', Move 2 0 "E" 'E',
          Move 0 1 "E" 'E', Move 1 1 "E" 'E', Move 2 1 "E" 'E',
          Move 0 2 "E" 'E', Move 1 2 "E" 'E', Move 2 2 "E" 'E']
 
--------------------------- Minimax part--------------------------
-
-minimax :: [Move] -> Int
-minimax allMoves =
+makeMove :: [Move] -> String -> Char -> Move
+makeMove madeMoves myId myMark =
     let
-        possibleMoves = board \\ allMoves
-        score = 10
+        possibleMoves = board \\ madeMoves
+        possibleGames = getNewGames myMark madeMoves possibleMoves []
+        scores = map (\m -> minimax m myMark (swapMark myMark)) possibleGames
+        bestScoreIndex = fromJust (elemIndex (maximum scores) scores)
+        bestMove = last (possibleGames !! bestScoreIndex)
     in
-        10
+        setId myId bestMove
 
+tmm :: String -> Char -> String -> Either String Move
+tmm id mark str = do
+    moves <- parseMoves [] str
+    let move = makeMove moves id mark
+    return move
 
+minimax :: [Move] -> Char -> Char -> Int
+minimax madeMoves myMark currMark =
+    let
+        possibleMoves = board \\ madeMoves
+        possibleGames = getNewGames currMark madeMoves possibleMoves []
+        scores = map (\m -> minimax m myMark (swapMark currMark)) possibleGames
+    in
+        if isGameOver madeMoves
+            then gameScore madeMoves myMark
+            else if myMark == currMark
+                then maximum scores
+                else minimum scores
+
+tm :: Char -> Char -> String -> Either String Int
+tm myMark currMark str = do
+    moves <- parseMoves [] str
+    let score = minimax moves myMark currMark
+    return score
+
+getNewGames :: Char -> [Move] -> [Move] -> [[Move]] -> [[Move]]
+getNewGames mark madeMoves [] newGames = newGames
+getNewGames mark madeMoves possibleMoves newGames = 
+    let 
+        currMove = setMark mark (head possibleMoves)
+        leftPossibleMoves = tail possibleMoves
+        games = newGames ++ [madeMoves ++ [currMove]]
+    in
+        getNewGames mark madeMoves leftPossibleMoves games
 
 isGameOver :: [Move] -> Bool
 isGameOver moves = if (length moves == 9 || getWinningMark moves /= Nothing) then True else False
 
-score :: [Move] -> Char -> Int
-score moves mark =
+gameScore :: [Move] -> Char -> Int
+gameScore moves mark =
     let
-        winningMark = winnerByMark moves mark
+        winningMark = getWinningMark moves
     in
         case winningMark of
             Nothing -> 0
-            Just mark -> 10
-            _ -> -10
+            Just value -> if value == mark then 10 else (-10)
 
---test AI (the IF part)
-t :: String -> Either String (Int, Int, Char)
+--test isGameOver function
+t :: String -> Either String Bool
 t str = 
     let
         moves' = parseMoves [] str
     in
         case moves' of
-            Right moves -> move moves
+            Right value -> Right $ isGameOver value
             Left msg -> Left msg
 
---test winnerByMark function
-t1 :: Char -> String -> Either String (Maybe Bool)
+--test gameScore function
+t1 :: Char -> String -> Either String Int
 t1 mark str =
     let
         moves' = parseMoves [] str
     in
         case moves' of
-            Right moves -> Right (winnerByMark moves mark)
+            Right moves -> Right (gameScore moves mark)
             Left msg -> Left msg
+
+--test getNewGames function
+tGNG :: Char -> String -> Either String [[Move]]
+tGNG mark str = do
+    moves <- parseMoves [] str
+    let possibleMoves = board \\ moves
+    let newGames = getNewGames mark moves possibleMoves []
+    return newGames
+
+swapMark :: Char -> Char
+swapMark 'X' = 'O'
+swapMark 'O' = 'X'
+
