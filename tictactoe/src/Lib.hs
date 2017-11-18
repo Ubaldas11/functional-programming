@@ -11,6 +11,7 @@ import Debug.Trace
 import Control.Monad
 import Data.Either
 import Data.Maybe
+import System.Environment
 
 import Move
 import MoveDataType
@@ -19,19 +20,38 @@ import Validator
 
 someFunc :: IO ()
 someFunc = do
-    attack "de"
+    (gameId, playerId) <- liftM parseArgs getArgs
+    if playerId == "1"
+        then attack gameId playerId "de"
+        else defend gameId playerId
+    
 
+baseUrl :: String
+baseUrl = "http://tictactoe.haskell.lt/game/"
 
-attack :: String -> IO ()
-attack boardStr = do
+defend :: String -> String -> IO ()
+defend gameId playerId = do
+    let url = baseUrl ++ gameId ++ "/player/" ++ playerId
+    getResponse <- sendGetRequest url
+    when (isLeft getResponse) (putStrLn (fromLeft getResponse))
+    let boardStr = fromRight getResponse
     moves <- getValidMoves boardStr
-    let boardStr = getNewBoardStr moves "Ubaldas"
-    postResponse <- sendPostRequest boardStr "http://tictactoe.haskell.lt/game/veryuniqueid/player/1"
+    let newBoardStr = getNewBoardStr moves playerId
+    postResponse <- sendPostRequest newBoardStr url
     when (isLeft postResponse) (putStrLn (fromLeft postResponse))
-    getResponse <- sendGetRequest "http://tictactoe.haskell.lt/game/veryuniqueid/player/1"
+    defend gameId playerId
+
+attack :: String -> String -> String -> IO ()
+attack gameId playerId boardStr = do
+    let url = baseUrl ++ gameId ++ "/player/" ++ playerId
+    moves <- getValidMoves boardStr
+    let boardStr = getNewBoardStr moves playerId
+    postResponse <- sendPostRequest boardStr url
+    when (isLeft postResponse) (putStrLn (fromLeft postResponse))
+    getResponse <- sendGetRequest url
     when (isLeft getResponse) (putStrLn (fromLeft getResponse))
     let newBoardStr = fromRight getResponse
-    attack newBoardStr
+    attack gameId playerId newBoardStr
 
 getValidMoves :: String -> IO [Move]
 getValidMoves str = do 
@@ -48,7 +68,7 @@ getNewBoardStr :: [Move] -> String -> String
 getNewBoardStr moves id = 
     let
         myMark = getMyMark moves
-        newBoard = getBoardWithMove moves "Ubaldas" myMark
+        newBoard = getBoardWithMove moves id myMark
         newBoardStr = convertMoves newBoard ""
     in
         newBoardStr
@@ -83,3 +103,8 @@ fromRight _ = error "Value is left"
 parseResponseToStr :: Result (Response String) -> Either String String
 parseResponseToStr (Right value) = Right (rspBody value)
 parseResponseToStr (Left _) = Left "Connection error"
+
+parseArgs :: [String] -> (String, String)
+parseArgs (gameId:"1":[]) = (gameId, "1")
+parseArgs (gameId:"2":[]) = (gameId, "2")
+parseArgs _ = error "Wrong command line input"
