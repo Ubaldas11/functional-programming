@@ -108,7 +108,3 @@ convertMoves moves str =
             markStr = "1:v1:" ++ [(mark move)] ++ "e"
         in
             convertMoves (tail moves) (coordsStr ++ idStr ++ prevStr ++ str ++ markStr) 
-
--- fromRight :: Either a b -> b
--- fromRight (Left _)  = error "Either.Unwrap.fromRight: Argument takes form 'Left _'" -- yuck
--- fromRight (Right x) = x

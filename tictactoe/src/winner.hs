@@ -5,6 +5,7 @@ import Data.Char
 
 import Parser
 import MoveDataType
+import Validator
 
 message = "d 1:c d 1:0i2e 1:1i2e e2:id10:GfYDhPxwal4:prevd1:cd1:0i1e1:1i2ee2:id28:hPHnfXjKxVnUlXPuVvnUtRrHzkpx4:prevd1:cd1:0i2e1:1i1ee2:id10:GfYDhPxwal4:prevd1:cd1:0i0e1:1i1ee2:id28:hPHnfXjKxVnUlXPuVvnUtRrHzkpx4:prevd1:cd1:0i2e1:1i0ee2:id10:GfYDhPxwal1:v1:xe1:v1:oe1:v1:xe1:v1:oe1:v1:xe"
 
@@ -26,19 +27,6 @@ winner str =
                             (_, False) -> Left "ERROR: Two X or O placed in a row"
                             (False, _) -> Left "ERROR: There are overlapping moves"
                             (_, _) -> Right (getWinner moves)
-
-correctMoveOrder :: Char -> [Move] -> Bool
-correctMoveOrder char [] = True
-correctMoveOrder char (m:moves) = 
-    let
-        nextChar = if char == 'X' then 'O' else 'X'
-        currMatch = mark m == char
-    in
-        currMatch && (correctMoveOrder nextChar moves)
-
-areMovesUnique :: [Move] -> Bool
-areMovesUnique [] = True
-areMovesUnique (m:moves) = m `notElem` moves && areMovesUnique moves
 
 getWinningMark :: [Move] -> Maybe Char
 getWinningMark moves = 

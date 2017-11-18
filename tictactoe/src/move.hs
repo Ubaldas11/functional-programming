@@ -1,19 +1,22 @@
+module Move where
+
 import Parser
 import MoveDataType
 import Winner
+import Validator
+
 import Control.Monad
 import Data.List
 import Data.Maybe
 import Data.Ord as Ord
-
 import Debug.Trace
 import Data.Either
 
 --visad gaus validzios lentos ejimus (ne pilna, nesidubliuojancia, t.t.) ir grazins ejima
 
-getMyMark :: [Move] -> Either String Char
-getMyMark [] = Right 'X'
-getMyMark moves = if mark (last moves) == 'X' then Right 'O' else Right 'X'
+getMyMark :: [Move] -> Char
+getMyMark [] = 'X'
+getMyMark moves = if mark (last moves) == 'X' then 'O' else 'X'
 
 evenMoveNumber :: [Move] -> Either String Bool
 evenMoveNumber moves = Right ((length moves) `mod` 2 == 0)
@@ -21,6 +24,14 @@ evenMoveNumber moves = Right ((length moves) `mod` 2 == 0)
 board = [Move 0 0 "E" 'E', Move 1 0 "E" 'E', Move 2 0 "E" 'E',
          Move 0 1 "E" 'E', Move 1 1 "E" 'E', Move 2 1 "E" 'E',
          Move 0 2 "E" 'E', Move 1 2 "E" 'E', Move 2 2 "E" 'E']
+
+getBoardWithMove :: [Move] -> String -> Char -> [Move]
+getBoardWithMove moves id mark =
+    let
+        move = makeMove moves id mark
+        newBoard = moves ++ [move]
+    in
+        newBoard
 
 makeMove :: [Move] -> String -> Char -> Move
 makeMove madeMoves myId myMark =
@@ -68,9 +79,6 @@ getNewGames mark madeMoves possibleMoves newGames =
     in
         getNewGames mark madeMoves leftPossibleMoves games
 
-isGameOver :: [Move] -> Bool
-isGameOver moves = if (length moves == 9 || getWinningMark moves /= Nothing) then True else False
-
 gameScore :: [Move] -> Char -> Int
 gameScore moves mark =
     let
@@ -112,3 +120,5 @@ swapMark :: Char -> Char
 swapMark 'X' = 'O'
 swapMark 'O' = 'X'
 
+isGameOver :: [Move] -> Bool
+isGameOver moves = if (length moves == 9 || getWinningMark moves /= Nothing) then True else False
