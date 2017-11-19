@@ -39,11 +39,11 @@ test-suite tictactoe-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Spec.hs
+  other-modules:       MinimaxTests
   build-depends:       base
                      , tasty
                      , tasty-hunit
                      , tictactoe
-                     
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   default-language:    Haskell2010
 
