@@ -38,7 +38,7 @@ executable tictactoe-exe
 test-suite tictactoe-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
-  main-is:             Spec.hs
+  main-is:             Tests.hs
   other-modules:       MinimaxTests
   build-depends:       base
                      , tasty

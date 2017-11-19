@@ -1,9 +1,7 @@
-{-# LANGUAGE OverloadedStrings #-}
 module Lib
-    ( someFunc
+    ( enter
     ) where
 
-import qualified Data.Text.IO as T
 import Network.HTTP
 import Network.Stream
 import Network.URI
@@ -18,8 +16,8 @@ import MoveDataType
 import Parser
 import Validator
 
-someFunc :: IO ()
-someFunc = do
+enter :: IO ()
+enter = do
     (gameId, playerId) <- liftM parseArgs getArgs
     if playerId == "1"
         then attack gameId playerId "de"
