@@ -71,6 +71,15 @@ swapMark 'O' = 'X'
 isGameOver :: [Move] -> Bool
 isGameOver moves = if (length moves == 9 || getWinningMark moves /= Nothing) then True else False
 
+isGameOverStr :: String -> Bool
+isGameOverStr str =
+    let
+        moves = parseMoves [] str
+    in
+        case moves of
+            Left msg -> error msg
+            Right value -> isGameOver value
+
 board = [Move 0 0 "E" 'E', Move 1 0 "E" 'E', Move 2 0 "E" 'E',
          Move 0 1 "E" 'E', Move 1 1 "E" 'E', Move 2 1 "E" 'E',
          Move 0 2 "E" 'E', Move 1 2 "E" 'E', Move 2 2 "E" 'E']

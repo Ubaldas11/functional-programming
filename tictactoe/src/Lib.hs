@@ -10,6 +10,7 @@ import Control.Monad
 import Data.Either
 import Data.Maybe
 import System.Environment
+import System.Exit
 
 import Move
 import MoveDataType
@@ -19,48 +20,37 @@ import Validator
 enter :: IO ()
 enter = do
     (gameId, playerId) <- liftM parseArgs getArgs
+    let url = baseUrl ++ gameId ++ "/player/" ++ playerId
     if playerId == "1"
-        then attack gameId playerId "de"
-        else defend gameId playerId
+        then attack url gameId playerId "de"
+        else defend url gameId playerId
     
-
 baseUrl :: String
 baseUrl = "http://tictactoe.haskell.lt/game/"
 
-defend :: String -> String -> IO ()
-defend gameId playerId = do
-    let url = baseUrl ++ gameId ++ "/player/" ++ playerId
-    getResponse <- sendGetRequest url
-    when (isLeft getResponse) (putStrLn (fromLeft getResponse))
-    let boardStr = fromRight getResponse
+defend :: String -> String -> String -> IO ()
+defend url gameId playerId = do
+    boardStr <- sendGetRequest url
     moves <- getValidMoves boardStr
     let newBoardStr = getNewBoardStr moves playerId
     postResponse <- sendPostRequest newBoardStr url
-    when (isLeft postResponse) (putStrLn (fromLeft postResponse))
-    defend gameId playerId
+    defend url gameId playerId
 
-attack :: String -> String -> String -> IO ()
-attack gameId playerId boardStr = do
-    let url = baseUrl ++ gameId ++ "/player/" ++ playerId
+attack :: String -> String -> String -> String -> IO ()
+attack url gameId playerId boardStr = do
     moves <- getValidMoves boardStr
     let boardStr = getNewBoardStr moves playerId
     postResponse <- sendPostRequest boardStr url
-    when (isLeft postResponse) (putStrLn (fromLeft postResponse))
-    getResponse <- sendGetRequest url
-    when (isLeft getResponse) (putStrLn (fromLeft getResponse))
-    let newBoardStr = fromRight getResponse
-    attack gameId playerId newBoardStr
+    newBoardStr <- sendGetRequest url
+    attack url gameId playerId newBoardStr
 
 getValidMoves :: String -> IO [Move]
 getValidMoves str = do 
-    let moves = parseMoves [] str
-    when (isLeft moves) (putStrLn (fromLeft moves))
-    let actualMoves = fromRight moves
-    let validBoard = validate actualMoves
-    when (isLeft validBoard) (putStrLn (fromLeft validBoard))
-    let gameOver = isGameOver actualMoves
-    when (gameOver) (putStrLn "Game Over")
-    return actualMoves
+    moves <- eitherToIO $ parseMoves [] str
+    validBoard <- eitherToIO $ validate moves
+    let gameOver = isGameOver moves
+    when (gameOver) (exitWithSuccess "Game Over")
+    return moves
 
 getNewBoardStr :: [Move] -> String -> String
 getNewBoardStr moves id = 
@@ -71,38 +61,38 @@ getNewBoardStr moves id =
     in
         newBoardStr
 
-sendPostRequest :: String -> String -> IO (Either String String)
+sendPostRequest :: String -> String -> IO String
 sendPostRequest board url = do
     let postRequest = postRequestWithBody url "application/bencode+map" board
-    postResponse <- simpleHTTP postRequest
-    traceIO (show postResponse)
-    traceIO (show (parseResponseToStr postResponse))
-    traceIO ("-----")
-    return (parseResponseToStr postResponse)
+    postResponseRes <- simpleHTTP postRequest
+    rspBody <- eitherToIO $ parseRspBody postResponseRes
+    let gameOver = isGameOverStr board
+    when gameOver (exitWithSuccess "Game Over")
+    --traceIO rspBody
+    return rspBody
 
-sendGetRequest :: String -> IO (Either String String)
+sendGetRequest :: String -> IO String
 sendGetRequest url = do
     let request = getRequest url
     let reqWithHead = setHeaders request [mkHeader HdrAccept "application/bencode+map" ]
-    getResponse <- simpleHTTP reqWithHead
-    traceIO (show getResponse)
-    traceIO (show (parseResponseToStr getResponse))
-    traceIO ("-----")
-    return (parseResponseToStr getResponse)
+    getResponseRes <- simpleHTTP reqWithHead
+    rspBody <- eitherToIO $ parseRspBody getResponseRes
+    --traceIO rspBody
+    return rspBody
 
-fromLeft :: Either a b -> a
-fromLeft (Left x) = x
-fromLeft _ = error "Value is right"
-
-fromRight :: Either a b -> b
-fromRight (Right x) = x
-fromRight _ = error "Value is left"
-
-parseResponseToStr :: Result (Response String) -> Either String String
-parseResponseToStr (Right value) = Right (rspBody value)
-parseResponseToStr (Left _) = Left "Connection error"
+parseRspBody :: Result (Response String) -> Either String String
+parseRspBody (Right value) = Right (rspBody value)
+parseRspBody (Left _) = Left "Connection error"
 
 parseArgs :: [String] -> (String, String)
 parseArgs (gameId:"1":[]) = (gameId, "1")
 parseArgs (gameId:"2":[]) = (gameId, "2")
 parseArgs _ = error "Wrong command line input"
+
+exitWithSuccess :: String -> IO ()
+exitWithSuccess msg = (putStrLn msg) >> exitSuccess
+
+eitherToIO :: Either String b -> IO b
+eitherToIO (Left a) = error a
+eitherToIO (Right b) = return b
+
