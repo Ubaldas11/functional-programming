@@ -21,6 +21,7 @@ library
                      , Parser
                      , Winner
                      , Validator
+                     , Encoder
   build-depends:       base >= 4.7 && < 5
                      , text
                      , HTTP

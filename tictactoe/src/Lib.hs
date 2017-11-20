@@ -16,6 +16,7 @@ import Move
 import MoveDataType
 import Parser
 import Validator
+import Encoder
 
 enter :: IO ()
 enter = do
@@ -46,7 +47,7 @@ attack url gameId playerId boardStr = do
 
 getValidMoves :: String -> IO [Move]
 getValidMoves str = do 
-    moves <- eitherToIO $ parseMoves [] str
+    moves <- eitherToIO $ parseStrToMoves str
     validBoard <- eitherToIO $ validate moves
     let gameOver = isGameOver moves
     when (gameOver) (exitWithSuccess "Game Over")
@@ -57,7 +58,7 @@ getNewBoardStr moves id =
     let
         myMark = getMyMark moves
         newBoard = getBoardWithMove moves id myMark
-        newBoardStr = convertMoves newBoard ""
+        newBoardStr = encMovesToStr newBoard
     in
         newBoardStr
 

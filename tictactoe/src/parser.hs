@@ -1,6 +1,9 @@
 module Parser where
 
 import MoveDataType
+
+parseStrToMoves :: String -> Either String [Move]
+parseStrToMoves str = parseMoves [] str
     
 parseMoves :: [Move] -> String -> Either String [Move]
 parseMoves moves "de" = Right []
@@ -92,19 +95,3 @@ parseNumber num i rest =
                       '8' -> parseNumber (num + 8 * i) (i*10) (init rest)
                       '9' -> parseNumber (num + 9 * i) (i*10) (init rest)
                       _ -> (-1) -- ERROR parsing number
-
----------------------Moves -> String--------------------
-getMessage :: [Move] -> String
-getMessage moves = convertMoves moves []
-
-convertMoves :: [Move] -> String -> String
-convertMoves [] str = str
-convertMoves moves str = 
-        let 
-            move = head moves
-            coordsStr = "d1:cd1:0i" ++ show (x move) ++ "e1:1i" ++ show (y move) ++ "ee"
-            idStr = "2:id" ++ show (length (pId move)) ++ ":" ++ pId move
-            prevStr = if (str == []) then "" else "4:prev"
-            markStr = "1:v1:" ++ [(mark move)] ++ "e"
-        in
-            convertMoves (tail moves) (coordsStr ++ idStr ++ prevStr ++ str ++ markStr) 
