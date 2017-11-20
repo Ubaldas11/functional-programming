@@ -41,6 +41,7 @@ test-suite tictactoe-test
   hs-source-dirs:      test
   main-is:             Tests.hs
   other-modules:       MinimaxTests
+                     , ValidatorTests
   build-depends:       base
                      , tasty
                      , tasty-hunit
