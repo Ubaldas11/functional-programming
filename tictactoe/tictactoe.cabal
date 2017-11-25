@@ -29,6 +29,7 @@ library
                      , network-uri
                      , happstack-server
                      , bytestring
+                     , parsec
   default-language:    Haskell2010
 
 executable tictactoe-exe

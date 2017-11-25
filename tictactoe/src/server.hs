@@ -1,38 +1,40 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Server where 
 
-import qualified Data.ByteString.Lazy.Char8 as L    
+import Data.ByteString.Lazy.Char8
 import Control.Monad
 import Control.Monad.IO.Class (liftIO)
 import Happstack.Server
+import Data.Maybe
 
 startServer :: IO ()
 startServer = simpleHTTP nullConf handlers
 
--- startServer = simpleHTTP nullConf $ msum 
---     [ do dir "foo" $ do method GET
---                         ok $ "GET request on /foo"
---     , do method POST 
---          ok $ "Post success"
---     ]
-
-myPolicy :: BodyPolicy
-myPolicy = (defaultBodyPolicy "/tmp/" 0 1000 1000)
+standardPolicy :: BodyPolicy
+standardPolicy = (defaultBodyPolicy "/tmp/" 0 1000 1000)
 
 handlers :: ServerPart Response
 handlers = do 
-    decodeBody myPolicy
-    msum [ dir "game" $ postUnit ]
+    decodeBody standardPolicy
+    msum [ dir "game" $ gameBoardPost
+         , dir "history" $ historyGet ]
 
-getBody :: ServerPart L.ByteString
+getBody :: ServerPart ByteString
 getBody = do
     req  <- askRq 
-    body <- liftIO $ takeRequestBody req 
-    case body of 
-        Just rqbody -> return . unBody $ rqbody 
-        Nothing     -> return ""
+    body <- liftIO $ takeRequestBody req
+    return $ unBody $ fromJust $ body
 
-postUnit :: ServerPart Response
-postUnit = do
+gameBoardPost :: ServerPart Response
+gameBoardPost = do
+  method POST
   body <- getBody
   ok $ toResponse body
+
+historyGet :: ServerPart Response
+historyGet = do
+    body <- getBody
+    ok $ toResponse gameHistory
+
+gameHistory :: String
+gameHistory = "History should be here"
