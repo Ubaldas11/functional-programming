@@ -17,14 +17,17 @@ import MoveDataType
 import Parser
 import Validator
 import Encoder
+import Server
 
 enter :: IO ()
-enter = do
-    (gameId, playerId) <- liftM parseArgs getArgs
-    let url = baseUrl ++ gameId ++ "/player/" ++ playerId
-    if playerId == "1"
-        then attack url gameId playerId "de"
-        else defend url gameId playerId
+enter = startServer
+-- enter = do
+--     (gameId, playerId) <- liftM parseArgs getArgs
+--     let url = baseUrl ++ gameId ++ "/player/" ++ playerId
+--     if playerId == "1"
+--         then attack url gameId playerId "de"
+--         else defend url gameId playerId
+        
     
 baseUrl :: String
 baseUrl = "http://tictactoe.haskell.lt/game/"
@@ -66,10 +69,10 @@ sendPostRequest :: String -> String -> IO String
 sendPostRequest board url = do
     let postRequest = postRequestWithBody url "application/bencode+map" board
     postResponseRes <- simpleHTTP postRequest
+    traceIO $ show postResponseRes
     rspBody <- eitherToIO $ parseRspBody postResponseRes
     let gameOver = isGameOverStr board
     when gameOver (exitWithSuccess "Game Over")
-    --traceIO rspBody
     return rspBody
 
 sendGetRequest :: String -> IO String
@@ -77,8 +80,8 @@ sendGetRequest url = do
     let request = getRequest url
     let reqWithHead = setHeaders request [mkHeader HdrAccept "application/bencode+map" ]
     getResponseRes <- simpleHTTP reqWithHead
+    traceIO $ show getResponseRes
     rspBody <- eitherToIO $ parseRspBody getResponseRes
-    --traceIO rspBody
     return rspBody
 
 parseRspBody :: Result (Response String) -> Either String String
