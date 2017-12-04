@@ -71,6 +71,17 @@ swapMark 'O' = 'X'
 isGameOver :: [Move] -> Bool
 isGameOver moves = if (length moves == 9 || getWinningMark moves /= Nothing) then True else False
 
+shouldGameContinue :: [Move] -> Either String Bool
+shouldGameContinue moves = if (length moves == 9 || getWinningMark moves /= Nothing)
+    then 
+        let 
+            winningMark = getWinningMark moves
+        in
+            case winningMark of
+                Nothing -> Left "Game over: draw."
+                Just value -> Left $ "Game over: " ++ [value] ++ " won."
+    else Right True
+
 isGameOverStr :: String -> Bool
 isGameOverStr str =
     let

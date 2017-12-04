@@ -23,6 +23,8 @@ library
                      , Validator
                      , Encoder
                      , Server
+                     , SmartParser
+                     , Helpers
   build-depends:       base >= 4.7 && < 5
                      , text
                      , HTTP

@@ -18,6 +18,7 @@ import Parser
 import Validator
 import Encoder
 import Server
+import Helpers
 
 enter :: IO ()
 enter = startServer
@@ -27,7 +28,14 @@ enter = startServer
 --     if playerId == "1"
 --         then attack url gameId playerId "de"
 --         else defend url gameId playerId
-        
+
+-- Get parsed moves and return 
+play :: [Move] -> Either String String
+play moves = do
+    gameNotOver <- shouldGameContinue moves
+    let newBoard = getNewBoardStr moves "Ubaldas"
+    return newBoard
+
     
 baseUrl :: String
 baseUrl = "http://tictactoe.haskell.lt/game/"
@@ -95,8 +103,4 @@ parseArgs _ = error "Wrong command line input"
 
 exitWithSuccess :: String -> IO ()
 exitWithSuccess msg = (putStrLn msg) >> exitSuccess
-
-eitherToIO :: Either String b -> IO b
-eitherToIO (Left a) = error a
-eitherToIO (Right b) = return b
 

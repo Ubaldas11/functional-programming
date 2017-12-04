@@ -6,9 +6,15 @@ import Control.Monad
 import Control.Monad.IO.Class (liftIO)
 import Happstack.Server
 import Data.Maybe
+import Debug.Trace
+
+import SmartParser
+import Helpers
 
 startServer :: IO ()
-startServer = simpleHTTP nullConf handlers
+startServer = do
+    traceIO "Web server started."
+    simpleHTTP nullConf handlers
 
 standardPolicy :: BodyPolicy
 standardPolicy = (defaultBodyPolicy "/tmp/" 0 1000 1000)
@@ -29,10 +35,13 @@ gameBoardPost :: ServerPart Response
 gameBoardPost = do
   method POST
   body <- getBody
+  let moves = fromRight $ parseJsonMoves $ unpack body
+  traceReceivedMoves moves
   ok $ toResponse body
 
 historyGet :: ServerPart Response
 historyGet = do
+    method GET
     body <- getBody
     ok $ toResponse gameHistory
 
