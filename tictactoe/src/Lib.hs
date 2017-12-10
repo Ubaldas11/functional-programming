@@ -20,7 +20,7 @@ import Helpers
 startClient :: IO ()
 startClient = do
     gameId <- liftM parseArgs getArgs
-    let url = "localhost:8000/game/" ++ gameId
+    let url = "http://127.0.0.1:8000/game/" ++ gameId
     let playerId = "Client"
     let firstMove = getNewBoardStr [] playerId
     play firstMove url playerId
@@ -38,9 +38,6 @@ getNextBoard moves = do
     gameNotOver <- shouldGameContinue moves
     let newBoard = getNewBoardStr moves "Ubaldas"
     return newBoard
-    
-baseUrl :: String
-baseUrl = "http://tictactoe.haskell.lt/game/"
 
 defend :: String -> String -> String -> IO ()
 defend url gameId playerId = do
@@ -77,13 +74,15 @@ getNewBoardStr moves id =
 
 sendPostRequest :: String -> String -> IO String
 sendPostRequest board url = do
-    traceIO "Got into POST send."
+    traceIO "\n"
+    traceIO ("Sending POST to " ++ url)
     let postRequest = postRequestWithBody url "application/bencode+map" board
     postResponseRes <- simpleHTTP postRequest
-    traceIO $ show postResponseRes
     rspBody <- eitherToIO $ parseRspBody postResponseRes
+    traceIO "POST response:"
+    traceIO rspBody
     let gameOver = isGameOverStr board
-    when gameOver (exitWithSuccess "Game Over")
+    when gameOver exitSuccess
     return rspBody
 
 sendGetRequest :: String -> IO String
@@ -106,3 +105,5 @@ parseArgs _ = error "Wrong command line input"
 exitWithSuccess :: String -> IO ()
 exitWithSuccess msg = (putStrLn msg) >> exitSuccess
 
+baseUrl :: String
+baseUrl = "http://tictactoe.haskell.lt/game/"
