@@ -78,8 +78,8 @@ shouldGameContinue moves = if (length moves == 9 || getWinningMark moves /= Noth
             winningMark = getWinningMark moves
         in
             case winningMark of
-                Nothing -> Left "Game over: draw."
-                Just value -> Left $ "Game over: " ++ [value] ++ " won."
+                Nothing -> Left "Draw."
+                Just value -> Left $ [value] ++ " won."
     else Right True
 
 isGameOverStr :: String -> Bool

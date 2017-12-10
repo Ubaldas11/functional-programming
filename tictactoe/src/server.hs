@@ -10,6 +10,7 @@ import Debug.Trace
 
 import SmartParser
 import Helpers
+import Lib
 
 startServer :: IO ()
 startServer = do
@@ -37,7 +38,16 @@ gameBoardPost = do
   body <- getBody
   let moves = fromRight $ parseJsonMoves $ unpack body
   traceReceivedMoves moves
-  ok $ toResponse body
+  let nextBoard = getNextBoard moves
+  case nextBoard of
+    Left str -> do
+        let msg = "Received game is over. Result: \n" ++ str
+        traceM msg
+        ok $ toResponse msg
+    Right val -> do
+        let postResponse = sendPostRequest val "http://tictactoe.haskell.lt/game/15935/player/1"
+        ok $ toResponse val
+
 
 historyGet :: ServerPart Response
 historyGet = do

@@ -1,6 +1,4 @@
-module Lib
-    ( enter
-    ) where
+module Lib where
 
 import Network.HTTP
 import Network.Stream
@@ -17,25 +15,23 @@ import MoveDataType
 import Parser
 import Validator
 import Encoder
-import Server
 import Helpers
 
 enter :: IO ()
-enter = startServer
--- enter = do
---     (gameId, playerId) <- liftM parseArgs getArgs
---     let url = baseUrl ++ gameId ++ "/player/" ++ playerId
---     if playerId == "1"
---         then attack url gameId playerId "de"
---         else defend url gameId playerId
+--enter = startServer
+enter = do
+    (gameId, playerId) <- liftM parseArgs getArgs
+    let url = baseUrl ++ gameId ++ "/player/" ++ playerId
+    if playerId == "1"
+        then attack url gameId playerId "de"
+        else defend url gameId playerId
 
 -- Get parsed moves and return 
-play :: [Move] -> Either String String
-play moves = do
+getNextBoard :: [Move] -> Either String String
+getNextBoard moves = do
     gameNotOver <- shouldGameContinue moves
     let newBoard = getNewBoardStr moves "Ubaldas"
     return newBoard
-
     
 baseUrl :: String
 baseUrl = "http://tictactoe.haskell.lt/game/"
@@ -75,6 +71,7 @@ getNewBoardStr moves id =
 
 sendPostRequest :: String -> String -> IO String
 sendPostRequest board url = do
+    traceIO "Got into POST send."
     let postRequest = postRequestWithBody url "application/bencode+map" board
     postResponseRes <- simpleHTTP postRequest
     traceIO $ show postResponseRes
@@ -82,6 +79,16 @@ sendPostRequest board url = do
     let gameOver = isGameOverStr board
     when gameOver (exitWithSuccess "Game Over")
     return rspBody
+
+-- sendPostRequest :: String -> String -> IO String
+-- sendPostRequest board url = do
+--     let postRequest = postRequestWithBody url "application/bencode+map" board
+--     postResponseRes <- simpleHTTP postRequest
+--     traceIO $ show postResponseRes
+--     rspBody <- eitherToIO $ parseRspBody postResponseRes
+--     let gameOver = isGameOverStr board
+--     when gameOver (exitWithSuccess "Game Over")
+--     return rspBody
 
 sendGetRequest :: String -> IO String
 sendGetRequest url = do
