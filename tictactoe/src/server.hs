@@ -1,14 +1,16 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Server where 
 
-import Data.ByteString.Lazy.Char8
+import Data.ByteString.Lazy.Char8 hiding (length)
 import Control.Monad
 import Control.Monad.IO.Class (liftIO)
 import Happstack.Server
 import Data.Maybe
+import Data.List.Split
 import Debug.Trace
 
 import SmartParser
+import Parser
 import Helpers
 import Lib
 
@@ -23,7 +25,7 @@ standardPolicy = (defaultBodyPolicy "/tmp/" 0 1000 1000)
 handlers :: ServerPart Response
 handlers = do 
     decodeBody standardPolicy
-    msum [ dir "game" $ gameBoardPost
+    msum [ dirs "game/" $ gameBoardPost
          , dir "history" $ historyGet ]
 
 getBody :: ServerPart ByteString
@@ -34,9 +36,13 @@ getBody = do
 
 gameBoardPost :: ServerPart Response
 gameBoardPost = do
+  noTrailingSlash
   method POST
+  rq <- askRq
+  let parts = splitOn "/" (rqUri rq)
+  --when (length parts /= 3) (badRequest $ toResponse badUrlString)
   body <- getBody
-  let moves = fromRight $ parseJsonMoves $ unpack body
+  let moves = fromRight $ parseStrToMoves $ unpack body
   traceReceivedMoves moves
   let nextBoard = getNextBoard moves
   case nextBoard of
@@ -57,3 +63,6 @@ historyGet = do
 
 gameHistory :: String
 gameHistory = "History should be here"
+
+badUrlString :: String
+badUrlString = "Bad URL."

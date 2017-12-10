@@ -30,7 +30,7 @@ enter = do
 getNextBoard :: [Move] -> Either String String
 getNextBoard moves = do
     gameNotOver <- shouldGameContinue moves
-    let newBoard = getNewBoardStr moves "Ubaldas"
+    let newBoard = getNewBoardStr moves "Server"
     return newBoard
     
 baseUrl :: String
