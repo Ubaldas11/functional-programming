@@ -17,14 +17,20 @@ import Validator
 import Encoder
 import Helpers
 
-enter :: IO ()
---enter = startServer
-enter = do
-    (gameId, playerId) <- liftM parseArgs getArgs
-    let url = baseUrl ++ gameId ++ "/player/" ++ playerId
-    if playerId == "1"
-        then attack url gameId playerId "de"
-        else defend url gameId playerId
+startClient :: IO ()
+startClient = do
+    gameId <- liftM parseArgs getArgs
+    let url = "localhost:8000/game/" ++ gameId
+    let playerId = "Client"
+    let firstMove = getNewBoardStr [] playerId
+    play firstMove url playerId
+
+play :: String -> String -> String -> IO ()
+play board url playerId = do
+    postResponse <- sendPostRequest board url
+    moves <- getValidMoves postResponse
+    let movesStr = getNewBoardStr moves playerId
+    play movesStr url playerId
 
 -- Get parsed moves and return 
 getNextBoard :: [Move] -> Either String String
@@ -80,16 +86,6 @@ sendPostRequest board url = do
     when gameOver (exitWithSuccess "Game Over")
     return rspBody
 
--- sendPostRequest :: String -> String -> IO String
--- sendPostRequest board url = do
---     let postRequest = postRequestWithBody url "application/bencode+map" board
---     postResponseRes <- simpleHTTP postRequest
---     traceIO $ show postResponseRes
---     rspBody <- eitherToIO $ parseRspBody postResponseRes
---     let gameOver = isGameOverStr board
---     when gameOver (exitWithSuccess "Game Over")
---     return rspBody
-
 sendGetRequest :: String -> IO String
 sendGetRequest url = do
     let request = getRequest url
@@ -103,9 +99,8 @@ parseRspBody :: Result (Response String) -> Either String String
 parseRspBody (Right value) = Right (rspBody value)
 parseRspBody (Left _) = Left "Connection error"
 
-parseArgs :: [String] -> (String, String)
-parseArgs (gameId:"1":[]) = (gameId, "1")
-parseArgs (gameId:"2":[]) = (gameId, "2")
+parseArgs :: [String] -> String
+parseArgs (gameId:[]) = gameId
 parseArgs _ = error "Wrong command line input"
 
 exitWithSuccess :: String -> IO ()
