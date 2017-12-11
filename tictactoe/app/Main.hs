@@ -1,6 +1,6 @@
 module Main where
 
-import Server
+import SpockServer
 
 main :: IO ()
-main = startServer
+main = startSpockServer

@@ -25,6 +25,7 @@ library
                      , Server
                      , SmartParser
                      , Helpers
+                     , SpockServer
   build-depends:       base >= 4.7 && < 5
                      , text
                      , HTTP
@@ -33,6 +34,8 @@ library
                      , bytestring
                      , parsec
                      , split
+                     , Spock
+                     , mtl
   default-language:    Haskell2010
 
 executable tictactoe-server
