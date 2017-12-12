@@ -46,7 +46,9 @@ app = do
         traceReceivedMoves moves
         let nextBoard = getNextBoard moves
         case nextBoard of
-            Left msg -> text (T.pack (show msg))
+            Left msg -> do
+                liftIO $ atomicModifyIORef' ref $ updateState True gameId history
+                text (T.pack (show msg))
             Right val -> do
                 let gameFinished = isGameOverStr val
                 traceShowM gameFinished
