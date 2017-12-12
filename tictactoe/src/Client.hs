@@ -1,4 +1,4 @@
-module Lib where
+module Client where
 
 import Network.HTTP
 import Network.Stream
@@ -31,13 +31,6 @@ play board url playerId = do
     moves <- getValidMoves postResponse
     let movesStr = getNewBoardStr moves playerId
     play movesStr url playerId
-
--- Get parsed moves and return 
-getNextBoard :: [Move] -> Either String String
-getNextBoard moves = do
-    gameNotOver <- shouldGameContinue moves
-    let newBoard = getNewBoardStr moves "Ubaldas"
-    return newBoard
 
 defend :: String -> String -> String -> IO ()
 defend url gameId playerId = do
