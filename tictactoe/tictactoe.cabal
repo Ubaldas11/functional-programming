@@ -30,7 +30,6 @@ library
                      , text
                      , HTTP
                      , network-uri
-                     , happstack-server
                      , bytestring
                      , parsec
                      , split

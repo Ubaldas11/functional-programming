@@ -6,9 +6,12 @@ import Web.Spock.Config
 import Control.Monad.Trans
 import Data.Monoid
 import Data.IORef
-import Data.Sequence
+import Data.Maybe
+import Data.List
 import qualified Data.Text as T
 import qualified Data.ByteString.Char8 as B
+import Debug.Trace
+import Control.Monad
 
 import SmartParser
 import Parser
@@ -36,6 +39,8 @@ app = do
     post ("game" <//> var) $ \gameId -> do
         (DummyAppState ref) <- getState
         history <- liftIO $ readIORef ref
+        let currGame = find (\g -> fst g == gameId) history
+        when (isJust currGame && snd (fromJust currGame) == True) (text "Game has ended")
         encodedBoard <- body
         let moves = fromRight $ parseStrToMoves (B.unpack encodedBoard)
         traceReceivedMoves moves
@@ -44,22 +49,24 @@ app = do
             Left msg -> text (T.pack (show msg))
             Right val -> do
                 let gameFinished = isGameOverStr val
-                liftIO $ atomicModifyIORef' ref $ updateState gameId history
+                traceShowM gameFinished
+                liftIO $ atomicModifyIORef' ref $ updateState gameFinished gameId history
                 text (T.pack val)
                 
-updateState :: String -> [(String, Bool)] -> [(String, Bool)] -> ([(String, Bool)], [(String, Bool)])
-updateState gameId history boards = 
+updateState :: Bool -> String -> [(String, Bool)] -> [(String, Bool)] -> ([(String, Bool)], [(String, Bool)])
+updateState gameFinished gameId history boards = 
     let
-        gameExists = lookup gameId history
+        game = find (\g -> fst g == gameId) history
     in
-        case gameExists of
+        case game of
             Nothing -> (history ++ [(gameId, False)], history ++ [(gameId, False)])
             Just val ->
                 let
-                    itemToUpdateIndex = fromJust $ lookupIndex 
+                    index = fromJust $ elemIndex val history
+                    updatedHistory = replaceAtIndex index (fst val, gameFinished) history
+                in
+                    (updatedHistory, updatedHistory)
 
-replaceNth :: Int -> a -> [a] 
-replaceNth n newVal (x:xs)
-    | n == 0 = newVal:xs
-    | otherwise = x:replaceNth (n-1) newVal xs
+replaceAtIndex :: Int -> x -> [x] -> [x]
+replaceAtIndex n item ls = a ++ (item:b) where (a, (_:b)) = splitAt n ls
                    

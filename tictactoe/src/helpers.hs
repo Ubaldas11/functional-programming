@@ -1,6 +1,5 @@
 module Helpers where
 
-import Happstack.Server
 import Control.Monad
 import Debug.Trace
 
