@@ -72,10 +72,12 @@ sendPostRequest board url = do
     let postRequest = postRequestWithBody url "application/bencode+map" board
     postResponseRes <- simpleHTTP postRequest
     rspBody <- eitherToIO $ parseRspBody postResponseRes
+    rspCode <- getResponseCode postResponseRes
     traceIO "POST response:"
     traceIO rspBody
     let gameOver = isGameOverStr board
     when gameOver exitSuccess
+    when (rspCode /= (2, 0, 0)) (error $ "Response code is " ++ show rspCode ++ ". Stopping.")
     return rspBody
 
 sendGetRequest :: String -> IO String
