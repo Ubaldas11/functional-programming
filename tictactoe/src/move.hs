@@ -4,6 +4,7 @@ import Control.Monad
 import Data.List
 import Data.Maybe
 import Data.Either
+import Debug.Trace
 
 import Parser
 import MoveDataType
