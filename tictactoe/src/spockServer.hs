@@ -42,7 +42,7 @@ app = do
         (GameHistory ref) <- getState
         history <- liftIO $ readIORef ref
         let currGame = find (\g -> fst g == gameId) history
-        when (isJust currGame && snd (fromJust currGame) == True) (text "Game has ended")
+        when (isJust currGame && snd (fromJust currGame) == True) (setStatus status418 >> text "Game has ended")
         encodedBoard <- body
         let moves = fromRight $ parseStrToMoves (B.unpack encodedBoard)
         traceReceivedMoves moves
@@ -50,11 +50,9 @@ app = do
         case nextBoard of
             Left msg -> do
                 liftIO $ atomicModifyIORef' ref $ updateState True gameId history
-                setStatus status418 >> text (T.pack (show msg))
+                text (T.pack (show msg))
             Right val -> do
-                let gameFinished = isGameOverStr val
-                traceShowM gameFinished
-                liftIO $ atomicModifyIORef' ref $ updateState gameFinished gameId history
+                liftIO $ atomicModifyIORef' ref $ updateState False gameId history
                 text (T.pack val)
                 
 updateState :: Bool -> String -> [(String, Bool)] -> [(String, Bool)] -> ([(String, Bool)], [(String, Bool)])
@@ -74,7 +72,7 @@ updateState gameFinished gameId history boards =
 
 getNextBoard :: [Move] -> Either String String
 getNextBoard moves = do
-    gameNotOver <- shouldGameContinue moves
+    gameOver <- shouldGameContinue moves
     let newBoard = getNewBoardStr moves "Server"
     return newBoard
 
