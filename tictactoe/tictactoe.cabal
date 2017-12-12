@@ -15,8 +15,7 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Lib
-                     , Move
+  exposed-modules:     Move
                      , MoveDataType
                      , Parser
                      , Winner
@@ -32,9 +31,9 @@ library
                      , network-uri
                      , bytestring
                      , parsec
-                     , split
                      , Spock
                      , mtl
+                     , http-types
   default-language:    Haskell2010
 
 executable tictactoe-server

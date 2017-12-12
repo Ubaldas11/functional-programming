@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module SpockServer where
 
+import Network.HTTP.Types.Status
 import Web.Spock
 import Web.Spock.Config
 import Control.Monad.Trans
@@ -16,16 +17,17 @@ import Control.Monad
 import SmartParser
 import Parser
 import Helpers
-import Lib
 import Move
+import MoveDataType
+import Encoder
 
 data MySession = EmptySession
-data MyAppState = DummyAppState (IORef [(String, Bool)])
+data MyAppState = GameHistory (IORef [(String, Bool)])
 
 startSpockServer :: IO ()
 startSpockServer =
     do ref <- newIORef []
-       spockCfg <- defaultSpockCfg EmptySession PCNoDatabase (DummyAppState ref)
+       spockCfg <- defaultSpockCfg EmptySession PCNoDatabase (GameHistory ref)
        runSpock 8000 (spock spockCfg app)
 
 app :: SpockM () MySession MyAppState ()
@@ -33,11 +35,11 @@ app = do
     get root $
         text "Hello World!"
     get ("history") $ do
-        (DummyAppState ref) <- getState
+        (GameHistory ref) <- getState
         gameIds <- liftIO $ readIORef ref
         text (T.pack (show gameIds))
     post ("game" <//> var) $ \gameId -> do
-        (DummyAppState ref) <- getState
+        (GameHistory ref) <- getState
         history <- liftIO $ readIORef ref
         let currGame = find (\g -> fst g == gameId) history
         when (isJust currGame && snd (fromJust currGame) == True) (text "Game has ended")
@@ -48,7 +50,7 @@ app = do
         case nextBoard of
             Left msg -> do
                 liftIO $ atomicModifyIORef' ref $ updateState True gameId history
-                text (T.pack (show msg))
+                setStatus status418 >> text (T.pack (show msg))
             Right val -> do
                 let gameFinished = isGameOverStr val
                 traceShowM gameFinished
@@ -68,6 +70,23 @@ updateState gameFinished gameId history boards =
                     updatedHistory = replaceAtIndex index (fst val, gameFinished) history
                 in
                     (updatedHistory, updatedHistory)
+
+
+getNextBoard :: [Move] -> Either String String
+getNextBoard moves = do
+    gameNotOver <- shouldGameContinue moves
+    let newBoard = getNewBoardStr moves "Server"
+    return newBoard
+
+getNewBoardStr :: [Move] -> String -> String
+getNewBoardStr moves id = 
+    let
+        myMark = getMyMark moves
+        newBoard = getBoardWithMove moves id myMark
+        newBoardStr = encMovesToStr newBoard
+    in
+        newBoardStr
+
 
 replaceAtIndex :: Int -> x -> [x] -> [x]
 replaceAtIndex n item ls = a ++ (item:b) where (a, (_:b)) = splitAt n ls
