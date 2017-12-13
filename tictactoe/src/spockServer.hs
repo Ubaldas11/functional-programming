@@ -8,7 +8,8 @@ import Control.Monad.Trans
 import Data.Monoid
 import Data.IORef
 import Data.Maybe
-import Data.List
+import Data.List hiding (insert)
+import Data.Set as Set
 import qualified Data.Text as T
 import qualified Data.ByteString.Char8 as B
 import Debug.Trace
@@ -22,11 +23,11 @@ import MoveDataType
 import Encoder
 
 data MySession = EmptySession
-data MyAppState = GameHistory (IORef [(String, Bool)])
+data MyAppState = GameHistory (IORef (Set (String, Bool)))
 
 startSpockServer :: IO ()
 startSpockServer =
-    do ref <- newIORef []
+    do ref <- newIORef empty
        spockCfg <- defaultSpockCfg EmptySession PCNoDatabase (GameHistory ref)
        runSpock 8000 (spock spockCfg app)
 
@@ -37,37 +38,26 @@ app = do
     get ("history") $ do
         (GameHistory ref) <- getState
         gameIds <- liftIO $ readIORef ref
-        text (T.pack (show gameIds))
+        let finishedGames = Set.filter (\g -> snd g == True) gameIds
+        let finishedGameIds = elems $ Set.map (\g -> fst g) finishedGames
+        let unfGames = Set.filter (\g -> notMember ((fst g, True)) gameIds) gameIds
+        let unfGameIds = elems $ Set.map (\g -> fst g) unfGames
+        text (T.pack ("Finished games: " ++ show finishedGameIds ++ "\nUnfinished games: " ++ show unfGameIds ++ "\nState: " ++ show gameIds))
     post ("game" <//> var) $ \gameId -> do
         (GameHistory ref) <- getState
         history <- liftIO $ readIORef ref
-        let currGame = find (\g -> fst g == gameId) history
-        when (isJust currGame && snd (fromJust currGame) == True) (setStatus status418 >> text "Game has ended")
+        when (member (gameId, True) history) (setStatus status418 >> text "Game has ended")
+        liftIO $ atomicModifyIORef' ref $ \i -> (insert (gameId, False) i, insert (gameId, False) i)
         encodedBoard <- body
         let moves = fromRight $ parseStrToMoves (B.unpack encodedBoard)
         traceReceivedMoves moves
         let nextBoard = getNextBoard moves
         case nextBoard of
             Left msg -> do
-                liftIO $ atomicModifyIORef' ref $ updateState True gameId history
+                liftIO $ atomicModifyIORef' ref $ \i -> (insert (gameId, True) i, insert (gameId, True) i)
                 text (T.pack (show msg))
             Right val -> do
-                liftIO $ atomicModifyIORef' ref $ updateState False gameId history
                 text (T.pack val)
-                
-updateState :: Bool -> String -> [(String, Bool)] -> [(String, Bool)] -> ([(String, Bool)], [(String, Bool)])
-updateState gameFinished gameId history boards = 
-    let
-        game = find (\g -> fst g == gameId) history
-    in
-        case game of
-            Nothing -> (history ++ [(gameId, False)], history ++ [(gameId, False)])
-            Just val ->
-                let
-                    index = fromJust $ elemIndex val history
-                    updatedHistory = replaceAtIndex index (fst val, gameFinished) history
-                in
-                    (updatedHistory, updatedHistory)
 
 
 getNextBoard :: [Move] -> Either String String
